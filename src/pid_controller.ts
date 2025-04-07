@@ -1,9 +1,7 @@
 /**
  * Interface for PID Controller variables
  */
-export interface PIDControllerVariables {
-  // Target value of process
-  target: number;
+export interface PIDVars {
   // Effectiveness of Proportional
   kp: number;
   // Effectiveness of Integral
@@ -12,26 +10,19 @@ export interface PIDControllerVariables {
   kd: number;
 }
 
-export const DEFAULT_ARGS: PIDControllerVariables = {target: 0, kp: 0, ki: 0, kd: 0};
-
 /**
  * PID Controller class, represents a working PID controller
  */
-export class PIDController {
+export class PID {
   public target: number;
-
-  public kp: number;
-  public ki: number;
-  public kd: number;
+  private pid_vars: PIDVars;
 
   private integral: number = 0;
   private last_error: number | null = null;
 
-  constructor(args: PIDControllerVariables) {
-    this.target = args.target;
-    this.kp = args.kp;
-    this.ki = args.ki;
-    this.kd = args.kd;
+  constructor(target: number, pid_vars: PIDVars) {
+    this.target = target;
+    this.pid_vars = pid_vars;
   }
 
   /**
@@ -51,34 +42,24 @@ export class PIDController {
     // Derivative e'(t)
     let ed = (this.last_error || 0 - e) / dt;
 
-    return this.kp * e + this.ki * ei + this.kd * ed;
+    return this.pid_vars.kp * e + this.pid_vars.ki * ei + this.pid_vars.kd * ed;
   }
 
-  /**
-   * Returns current error in process
-   * @param sensor_value Measured enviroment value
-   * @returns Current error
-   */
   get_error(sensor_value: number): number {
     return this.target - sensor_value;
   }
 
-  /**
-   * Resets memory in PID Controller
-   */
   reset() {
     this.integral = 0;
     this.last_error = null;
   }
 
-  /**
-   * Lets you edit PID Controller variables mid process
-   * @param args PID Controller Variables
-   */
-  set_args(args: PIDControllerVariables) {
-    this.target = args.target;
-    this.kp = args.kp;
-    this.ki = args.ki;
-    this.kd = args.kd;
+  set(target: number, pid_vars: PIDVars) {
+    this.target = target;
+    this.pid_vars = pid_vars;
   }
 }
+
+const DEFAULT_PID = new PID(0, { kp: 0, ki: 0, kd: 0 });
+
+export { DEFAULT_PID };

@@ -1,7 +1,4 @@
-import {
-  AirplaneStabilizerPIDSimulation,
-  PIDSimulation,
-} from "./simulations";
+import { AirplaneStabilizerPIDSimulation, PIDSimulation } from "./simulations";
 import {
   Chart,
   LineController,
@@ -34,12 +31,7 @@ class Program {
 
   static start() {
     // Create simulation
-    const sim = new AirplaneStabilizerPIDSimulation({
-      target: 50,
-      kp: 5,
-      ki: 5,
-      kd: -0.6,
-    });
+    const sim = new AirplaneStabilizerPIDSimulation(null, null);
 
     function resize() {
       simCanvas.width = simCanvas.clientWidth;
@@ -107,10 +99,11 @@ class Program {
       kd: document.getElementById("kd") as HTMLInputElement,
     };
     function updateParams() {
-      sim.pid_controller.target = parseFloat(inputs.target.value);
-      sim.pid_controller.kp = parseFloat(inputs.kp.value);
-      sim.pid_controller.ki = parseFloat(inputs.ki.value);
-      sim.pid_controller.kd = parseFloat(inputs.kd.value);
+      sim.pid_controller.set(parseFloat(inputs.target.value), {
+        kp: parseFloat(inputs.kp.value),
+        ki: parseFloat(inputs.ki.value),
+        kd: parseFloat(inputs.kd.value),
+      });
     }
     Object.values(inputs).forEach((el) =>
       el.addEventListener("input", updateParams)

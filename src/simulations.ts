@@ -20,14 +20,21 @@
  *
  * @module PIDSimulation
  */
-import { PIDController, PIDControllerVariables, DEFAULT_ARGS } from "./pid_controller";
+import { PID, PIDVars, DEFAULT_PID } from "./pid_controller";
 
 /**
  * Base class for a simulation of any kind.
  * This class defines the common methods that all simulations need to implement.
  */
 export abstract class PIDSimulation {
-  public pid_controller: PIDController = new PIDController(DEFAULT_ARGS)
+  public pid_controller: PID = DEFAULT_PID;
+
+  constructor(target: number | null, args: PIDVars | null) {
+    if (target && args) {
+      this.pid_controller = new PID(0, args);
+    }
+  };
+
   /**
    * Updates the simulation by one step.
    * This method will update the simulation state by applying the PID control logic.
@@ -62,17 +69,6 @@ export class RoomHeaterPIDSimulation extends PIDSimulation {
   private C: number = 20; // Thermal mass of the room
   private k: number = 0.01; // Heat transfer coefficient (wall thermal insulation)
   private H_loss: number = 0.0; // Variable heat loss to the environment
-
-  /**
-   * Creates an instance of the RoomHeaterPIDSimulation class.
-   * Initializes the PID controller for the heating unit.
-   *
-   * @param args - The PID controller configuration variables such as target, kp, ki, and kd.
-   */
-  constructor(args: PIDControllerVariables) {
-    super();
-    this.pid_controller = new PIDController(args);
-  }
 
   /**
    * Updates the simulation state by one step based on the delta time.
@@ -154,17 +150,6 @@ export class AirplaneStabilizerPIDSimulation extends PIDSimulation {
   private M_s: number = 0.5; // Control effectiveness of the stabilizer
 
   /**
-   * Creates an instance of the RoomHeaterPIDSimulation class.
-   * Initializes the PID controller for the heating unit.
-   *
-   * @param args - The PID controller configuration variables such as target, kp, ki, and kd.
-   */
-  constructor(args: PIDControllerVariables) {
-    super();
-    this.pid_controller = new PIDController(args);
-  }
-
-  /**
    * Updates the simulation state by one step.
    * This includes calculating the deflection angle of the stabilizer and updating the pitch.
    *
@@ -197,7 +182,6 @@ export class AirplaneStabilizerPIDSimulation extends PIDSimulation {
 
     const planeWidth = 200;
     const planeHeight = 50;
-    const pitchBarHeight = 20;
 
     // Background
     ctx.fillStyle = "#eee";
@@ -207,8 +191,6 @@ export class AirplaneStabilizerPIDSimulation extends PIDSimulation {
     ctx.fillStyle = "#3498db";
     ctx.fillRect(w / 2 - planeWidth / 2, h / 2 - planeHeight / 2, planeWidth, planeHeight);
 
-    // Draw airplane tail (stabilizer) line
-    const stabilizerLength = 50;
     const stabilizerAngle = this.P; // pitch angle, in degrees (this may need to be adjusted for visualization scale)
 
     const stabilizerX = w / 2 + (planeWidth / 2) * Math.cos(stabilizerAngle);
@@ -252,50 +234,50 @@ export class AirplaneStabilizerPIDSimulation extends PIDSimulation {
   }
 }
 
-/**
- * Simulation of a two-limb robotic arm, where the arm moves to reach a target position smoothly.
- * The arm has two joints and can adjust the angles to reach a given (x, y) target position.
- */
-export class RoboticArmPIDSimulation extends PIDSimulation {
-  private J1: number = 0; // Joint 1 angle (in radians)
-  private J2: number = 0; // Joint 2 angle (in radians)
+// /**
+//  * Simulation of a two-limb robotic arm, where the arm moves to reach a target position smoothly.
+//  * The arm has two joints and can adjust the angles to reach a given (x, y) target position.
+//  */
+// export class RoboticArmPIDSimulation extends PIDSimulation {
+//   private J1: number = 0; // Joint 1 angle (in radians)
+//   private J2: number = 0; // Joint 2 angle (in radians)
 
-  private L1: number = 0; // Length of limb 1
-  private L2: number = 0; // Length of limb 2
+//   private L1: number = 0; // Length of limb 1
+//   private L2: number = 0; // Length of limb 2
 
-  /**
-   * Updates the simulation state by one step.
-   * This method calculates the new joint angles to move the robotic arm towards the target position.
-   *
-   * @param dt - The delta time in seconds.
-   * @throws {Error} As the method is not implemented yet.
-   */
-  update(dt: number) {
-    let x = this.L1 * Math.cos(this.J1) + this.L2 * Math.cos(this.J1 + this.J2);
-    let y = this.L1 * Math.sin(this.J1) + this.L2 * Math.sin(this.J1 + this.J2);
+//   /**
+//    * Updates the simulation state by one step.
+//    * This method calculates the new joint angles to move the robotic arm towards the target position.
+//    *
+//    * @param dt - The delta time in seconds.
+//    * @throws {Error} As the method is not implemented yet.
+//    */
+//   update(dt: number) {
+//     let x = this.L1 * Math.cos(this.J1) + this.L2 * Math.cos(this.J1 + this.J2);
+//     let y = this.L1 * Math.sin(this.J1) + this.L2 * Math.sin(this.J1 + this.J2);
 
-    throw new Error("Method not implemented.");
-  }
+//     throw new Error("Method not implemented.");
+//   }
 
-  /**
-   * Draws the current state of the simulation to the canvas.
-   * This method is not yet implemented for the robotic arm simulation.
-   *
-   * @param ctx - The 2D rendering context of the HTML canvas.
-   * @throws {Error} If this method is called, as it is not yet implemented.
-   */
-  draw(ctx: CanvasRenderingContext2D) {
-    throw new Error("Method not implemented.");
-  }
+//   /**
+//    * Draws the current state of the simulation to the canvas.
+//    * This method is not yet implemented for the robotic arm simulation.
+//    *
+//    * @param ctx - The 2D rendering context of the HTML canvas.
+//    * @throws {Error} If this method is called, as it is not yet implemented.
+//    */
+//   draw(ctx: CanvasRenderingContext2D) {
+//     throw new Error("Method not implemented.");
+//   }
 
-  /**
-   * Returns the current value of the robotic arm's state.
-   * This method is not yet implemented for the robotic arm simulation.
-   *
-   * @returns {number} Throws an error since this method is not implemented.
-   * @throws {Error} If this method is called.
-   */
-  current(): number {
-    throw new Error("Method not implemented.");
-  }
-}
+//   /**
+//    * Returns the current value of the robotic arm's state.
+//    * This method is not yet implemented for the robotic arm simulation.
+//    *
+//    * @returns {number} Throws an error since this method is not implemented.
+//    * @throws {Error} If this method is called.
+//    */
+//   current(): number {
+//     throw new Error("Method not implemented.");
+//   }
+// }
