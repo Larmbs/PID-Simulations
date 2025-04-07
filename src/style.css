@@ -1,0 +1,91 @@
+body, html {
+  padding: 0;
+  margin: 0;
+  height: 100vh;
+  width: 100vw;
+}
+/* Main layout container */
+.app-layout {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: white;
+  padding: 0;
+  margin: 0;
+}
+
+/* Sidebar - Controls */
+.sidebar {
+  width: 200px;
+  background-color: #5d7286; /* Darker sidebar background */
+  color: white;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* Spacing between buttons */
+  border-right: 3px solid #34495e; /* Slight border for separation */
+  height: 100%;
+  position: sticky;
+  top: 0;
+}
+
+.sidebar button {
+  background-color: #34495e;
+  color: white;
+  border: none;
+  padding: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.sidebar button:hover {
+  background-color: #1abc9c; /* Hover effect for buttons */
+}
+
+/* Main content area (simulation + chart) */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Space between simulation and chart */
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Simulation area (Top) */
+.sim-area {
+  flex: 2;
+  background-color: #ecf0f1; /* Light background for the simulation area */
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+/* Chart area (Bottom) */
+.chart-area {
+  flex: 1;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Chart canvas (Make it responsive to the area) */
+.chart-area canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Make simulation canvas stretch */
+.sim-area canvas {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px; /* Rounded corners for the canvas */
+}
