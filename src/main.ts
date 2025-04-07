@@ -1,4 +1,5 @@
-import { AirplaneStabilizerPIDSimulation, PIDSimulation } from "./simulations";
+import { PIDVars } from "./pid_controller";
+import { AirplaneStabilizerPIDSimulation, PIDSimulation, RoomHeaterPIDSimulation } from "./simulations";
 import {
   Chart,
   LineController,
@@ -24,6 +25,19 @@ const simCanvas = document.getElementById("simCanvas") as HTMLCanvasElement;
 const simCtx = simCanvas.getContext("2d")!;
 const chartCanvas = document.getElementById("chartCanvas") as HTMLCanvasElement;
 
+class SideBar {
+  static set_screen_values(target: number, pid_vars: PIDVars) {}
+}
+
+class BottomBar {
+  static reset_chart() {}
+  static draw_chart() {}
+}
+
+class MainScreen {
+  static draw() {}
+}
+
 class Program {
   static lastTime: number = performance.now();
   static chart: Chart;
@@ -31,7 +45,7 @@ class Program {
 
   static start() {
     // Create simulation
-    const sim = new AirplaneStabilizerPIDSimulation(null, null);
+    const sim = new RoomHeaterPIDSimulation(null, null);
 
     function resize() {
       simCanvas.width = simCanvas.clientWidth;
