@@ -1,6 +1,6 @@
 import {
   AirplaneStabilizerPIDSimulation,
-  RoomHeaterPIDSimulation,
+  PIDSimulation,
 } from "./simulations";
 import {
   Chart,
@@ -22,149 +22,125 @@ Chart.register(
   CategoryScale,
   Legend
 );
+
 const simCanvas = document.getElementById("simCanvas") as HTMLCanvasElement;
 const simCtx = simCanvas.getContext("2d")!;
-let chart: Chart | null = null;
+const chartCanvas = document.getElementById("chartCanvas") as HTMLCanvasElement;
 
-const TapsGraphCard = () => {
-  const chartCanvas = document.getElementById("chartCanvas") as HTMLCanvasElement;
+class Program {
+  static lastTime: number = performance.now();
+  static chart: Chart;
+  static sim: PIDSimulation;
 
-  if (!chartCanvas) {
-    console.error("Chart canvas element not found");
-    return;
-  }
+  static start() {
+    // Create simulation
+    const sim = new AirplaneStabilizerPIDSimulation({
+      target: 50,
+      kp: 5,
+      ki: 5,
+      kd: -0.6,
+    });
 
-  if (chart) {
-    chart.clear();
-    chart.destroy();
-  }
+    function resize() {
+      simCanvas.width = simCanvas.clientWidth;
+      simCanvas.height = simCanvas.clientHeight;
+      chartCanvas.width = chartCanvas.clientWidth;
+      chartCanvas.height = chartCanvas.clientHeight;
+    }
+    window.addEventListener("resize", resize);
+    resize();
 
-  chart = new Chart(chartCanvas, {
-    type: "line",
-    data: {
-      labels: [] as string[], // time or frame labels
-      datasets: [
-        {
-          label: "Room Temp (°C)",
-          data: [] as number[],
-          borderColor: "red",
-          fill: true,
-          tension: 0.1, // smoothing
-        },
-        {
-          label: "Target Temp (°C)",
-          data: [] as number[],
-          borderColor: "blue",
-          borderDash: [5, 5],
-          fill: false,
-          tension: 0.1,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      animation: false,
-      scales: {
-        y: {
-          min: 0,
-          max: 100,
-          title: {
-            display: true,
-            text: "Temperature (°C)",
+    if (Chart.getChart("chartCanvas")) Chart.getChart("chartCanvas")?.destroy();
+    Program.chart = new Chart(chartCanvas, {
+      type: "line",
+      data: {
+        labels: [] as string[], // time or frame labels
+        datasets: [
+          {
+            label: "Room Temp (°C)",
+            data: [] as number[],
+            borderColor: "red",
+            fill: false,
+            tension: 0.2, // smoothing
           },
-          grid: {
-            color: "#eee",
+          {
+            label: "Target Temp (°C)",
+            data: [] as number[],
+            borderColor: "blue",
+            borderDash: [5, 5],
+            fill: false,
+            tension: 0.1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        animation: false,
+        scales: {
+          y: {
+            min: 0,
+            max: 100,
+            title: {
+              display: true,
+              text: "Temperature (°C)",
+            },
+            grid: {
+              color: "#eee",
+            },
+          },
+          x: {
+            display: false,
           },
         },
-        x: {
-          display: false,
+        plugins: {
+          legend: {
+            position: "top",
+          },
         },
       },
-      plugins: {
-        legend: {
-          position: "top",
-        },
-      },
-    },
-  });
-};
+    });
 
-TapsGraphCard();
+    const inputs = {
+      target: document.getElementById("target") as HTMLInputElement,
+      kp: document.getElementById("kp") as HTMLInputElement,
+      ki: document.getElementById("ki") as HTMLInputElement,
+      kd: document.getElementById("kd") as HTMLInputElement,
+    };
+    function updateParams() {
+      sim.pid_controller.target = parseFloat(inputs.target.value);
+      sim.pid_controller.kp = parseFloat(inputs.kp.value);
+      sim.pid_controller.ki = parseFloat(inputs.ki.value);
+      sim.pid_controller.kd = parseFloat(inputs.kd.value);
+    }
+    Object.values(inputs).forEach((el) =>
+      el.addEventListener("input", updateParams)
+    );
 
-// Resize logic
-function resize() {
-  const simCanvas = document.getElementById("simCanvas") as HTMLCanvasElement;
-  const chartCanvas = document.getElementById("myChart") as HTMLCanvasElement;
-
-  if (simCanvas) {
-    simCanvas.width = simCanvas.clientWidth;
-    simCanvas.height = simCanvas.clientHeight;
+    requestAnimationFrame(Program.loop);
   }
+  static loop(now: number) {
+    const dt = (now - Program.lastTime) / 1000;
+    Program.lastTime = now;
+    Program.sim.update(dt);
+    simCtx.clearRect(0, 0, simCanvas.width, simCanvas.height);
+    Program.sim.draw(simCtx);
 
-  if (chartCanvas) {
-    chartCanvas.width = chartCanvas.clientWidth;
-    chartCanvas.height = chartCanvas.clientHeight;
-  }
+    // Update chart
+    Program.chart.data.labels?.push(""); // label (could be time later)
+    Program.chart.data.datasets[0].data.push(Program.sim.current());
+    Program.chart.data.datasets[1].data.push(Program.sim.pid_controller.target);
 
-  if (chart) {
-    chart.resize();
-  }
-}
-
-window.addEventListener("resize", resize);
-
-resize();
-
-const sim = new RoomHeaterPIDSimulation({
-  target: 25,
-  kp: 1.0,
-  ki: 0.1,
-  kd: 0.05,
-});
-
-const inputs = {
-  target: document.getElementById("target") as HTMLInputElement,
-  kp: document.getElementById("kp") as HTMLInputElement,
-  ki: document.getElementById("ki") as HTMLInputElement,
-  kd: document.getElementById("kd") as HTMLInputElement,
-};
-
-function updateParams() {
-  sim.pid_controller.target = parseFloat(inputs.target.value);
-  sim.pid_controller.kp = parseFloat(inputs.kp.value);
-  sim.pid_controller.ki = parseFloat(inputs.ki.value);
-  sim.pid_controller.kd = parseFloat(inputs.kd.value);
-}
-
-Object.values(inputs).forEach((el) =>
-  el.addEventListener("input", updateParams)
-);
-
-let lastTime = performance.now();
-
-function loop(now: number) {
-  const dt = (now - lastTime) / 1000;
-  lastTime = now;
-
-  sim.update(dt);
-  simCtx?.clearRect(0, 0, simCanvas.width, simCanvas.height);
-  sim.draw(simCtx);
-
-  // Add to temperature history
-  chart?.data.labels?.push(""); // optional chaining for safety
-  chart?.data.datasets[0].data.push(sim.current());
-  chart?.data.datasets[1].data.push(sim.pid_controller.target);
-
-  const maxPoints = 200;
-  if (chart) {
-    chart.data.labels = chart.data.labels?.slice(-maxPoints);
-    chart?.data.datasets.forEach((dataset) => {
+    // Keep dataset short
+    const maxPoints = 200;
+    Program.chart.data.labels = Program.chart.data.labels?.slice(-maxPoints);
+    Program.chart.data.datasets.forEach((dataset) => {
       dataset.data = dataset.data.slice(-maxPoints);
     });
+
+    Program.chart.update();
+
+    requestAnimationFrame(Program.loop);
   }
-
-  chart?.update();
-
-  requestAnimationFrame(loop);
 }
-requestAnimationFrame(loop);
+
+Program.start();
