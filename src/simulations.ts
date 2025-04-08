@@ -29,10 +29,8 @@ import { PID, PIDVars, DEFAULT_PID } from "./pid_controller";
 export abstract class PIDSimulation {
   public pid_controller: PID = DEFAULT_PID;
 
-  constructor(target: number | null, args: PIDVars | null) {
-    if (target && args) {
-      this.pid_controller = new PID(0, args);
-    }
+  constructor(target: number, args: PIDVars) {
+    this.pid_controller = new PID(target, args);
   };
 
   /**

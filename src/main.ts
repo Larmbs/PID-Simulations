@@ -1,5 +1,11 @@
 import { PIDVars } from "./pid_controller";
-import { AirplaneStabilizerPIDSimulation, PIDSimulation, RoomHeaterPIDSimulation } from "./simulations";
+import { ControlBar, ControlElem } from "./ui.ts";
+
+import {
+  AirplaneStabilizerPIDSimulation,
+  PIDSimulation,
+  RoomHeaterPIDSimulation,
+} from "./simulations";
 import {
   Chart,
   LineController,
@@ -10,7 +16,6 @@ import {
   CategoryScale,
   Legend,
 } from "chart.js";
-
 Chart.register(
   LineController,
   LineElement,
@@ -21,31 +26,42 @@ Chart.register(
   Legend
 );
 
-const simCanvas = document.getElementById("simCanvas") as HTMLCanvasElement;
+const simCanvas = document.getElementById("SimArea") as HTMLCanvasElement;
 const simCtx = simCanvas.getContext("2d")!;
-const chartCanvas = document.getElementById("chartCanvas") as HTMLCanvasElement;
-
-class SideBar {
-  static set_screen_values(target: number, pid_vars: PIDVars) {}
-}
-
-class BottomBar {
-  static reset_chart() {}
-  static draw_chart() {}
-}
-
-class MainScreen {
-  static draw() {}
-}
+const chartCanvas = document.getElementById("ChartArea") as HTMLCanvasElement;
 
 class Program {
   static lastTime: number = performance.now();
   static chart: Chart;
   static sim: PIDSimulation;
+  static control_bar: ControlBar = new ControlBar();
 
   static start() {
-    // Create simulation
-    const sim = new RoomHeaterPIDSimulation(null, null);
+    const default_target = 25;
+    const default_args = {
+      kp: 5,
+      ki: 5,
+      kd: -1,
+    };
+    this.sim = new RoomHeaterPIDSimulation(25, default_args);
+
+    Program.control_bar.add_control(
+      "Target",
+      new ControlElem(0, 50, 0.5, default_target)
+    );
+    Program.control_bar.add_control(
+      "KP",
+      new ControlElem(-5, 5, 0.1, default_args.kp)
+    );
+    Program.control_bar.add_control(
+      "KI",
+      new ControlElem(-5, 5, 0.1, default_args.ki)
+    );
+    Program.control_bar.add_control(
+      "KD",
+      new ControlElem(-5, 5, 0.1, default_args.kd)
+    );
+    Program.control_bar.update_html();
 
     function resize() {
       simCanvas.width = simCanvas.clientWidth;
@@ -56,7 +72,7 @@ class Program {
     window.addEventListener("resize", resize);
     resize();
 
-    if (Chart.getChart("chartCanvas")) Chart.getChart("chartCanvas")?.destroy();
+    if (Chart.getChart("ChartArea")) Chart.getChart("ChartArea")?.destroy();
     Program.chart = new Chart(chartCanvas, {
       type: "line",
       data: {
@@ -67,7 +83,9 @@ class Program {
             data: [] as number[],
             borderColor: "red",
             fill: false,
-            tension: 0.2, // smoothing
+            tension: 0.2, // curve smoothing
+            pointRadius: 0, // no dots
+            pointHoverRadius: 0, // no hover dots
           },
           {
             label: "Target Temp (°C)",
@@ -76,6 +94,8 @@ class Program {
             borderDash: [5, 5],
             fill: false,
             tension: 0.1,
+            pointRadius: 0,
+            pointHoverRadius: 0,
           },
         ],
       },
@@ -106,28 +126,21 @@ class Program {
       },
     });
 
-    const inputs = {
-      target: document.getElementById("target") as HTMLInputElement,
-      kp: document.getElementById("kp") as HTMLInputElement,
-      ki: document.getElementById("ki") as HTMLInputElement,
-      kd: document.getElementById("kd") as HTMLInputElement,
-    };
-    function updateParams() {
-      sim.pid_controller.set(parseFloat(inputs.target.value), {
-        kp: parseFloat(inputs.kp.value),
-        ki: parseFloat(inputs.ki.value),
-        kd: parseFloat(inputs.kd.value),
-      });
-    }
-    Object.values(inputs).forEach((el) =>
-      el.addEventListener("input", updateParams)
-    );
-
     requestAnimationFrame(Program.loop);
   }
   static loop(now: number) {
     const dt = (now - Program.lastTime) / 1000;
     Program.lastTime = now;
+
+    Program.sim.pid_controller.set(
+      Program.control_bar.get_control("Target")?.get_value() || 0,
+      {
+        kp: Program.control_bar.get_control("KP")?.get_value() || 0,
+        ki: Program.control_bar.get_control("KI")?.get_value() || 0,
+        kd: Program.control_bar.get_control("KD")?.get_value() || 0,
+      }
+    );
+
     Program.sim.update(dt);
     simCtx.clearRect(0, 0, simCanvas.width, simCanvas.height);
     Program.sim.draw(simCtx);
