@@ -1,6 +1,27 @@
-/**
- * Wrappers around UI functionality
- */
+import {
+  Chart,
+  LineController,
+  LineElement,
+  PointElement,
+  LinearScale,
+  Title,
+  CategoryScale,
+  Legend,
+  BubbleDataPoint,
+  ChartConfiguration,
+  ChartConfigurationCustomTypesPerDataset,
+  ChartTypeRegistry,
+  Point,
+} from "chart.js";
+Chart.register(
+  LineController,
+  LineElement,
+  PointElement,
+  LinearScale,
+  Title,
+  CategoryScale,
+  Legend
+);
 
 export class ControlElem {
   public min: number;
@@ -122,5 +143,48 @@ export class ControlBar {
     this.controls.clear();
     const container = document.getElementById(this.container_id);
     if (container) container.innerHTML = "";
+  }
+}
+
+export class ScrollingChart {
+  private chart: Chart;
+  private max_points: number;
+
+  constructor(
+    max_points: number,
+    config:
+      | ChartConfiguration<
+          keyof ChartTypeRegistry,
+          (number | [number, number] | Point | BubbleDataPoint | null)[],
+          unknown
+        >
+      | ChartConfigurationCustomTypesPerDataset<
+          keyof ChartTypeRegistry,
+          (number | [number, number] | Point | BubbleDataPoint | null)[],
+          unknown
+        >
+  ) {
+    const chartCanvas = document.getElementById(
+      "ChartArea"
+    ) as HTMLCanvasElement;
+    if (Chart.getChart("ChartArea")) Chart.getChart("ChartArea")?.destroy();
+    this.chart = new Chart(chartCanvas, config);
+
+    this.max_points = max_points;
+  }
+  add_data(dataset: number, value: number) {
+    this.chart.data.datasets[dataset].data.push(value);
+  }
+  add_label(label: string) {
+    this.chart.data.labels?.push(label);
+  }
+  update() {
+    this.chart.data.labels = this.chart.data.labels?.slice(-this.max_points);
+
+    this.chart.data.datasets.forEach((dataset) => {
+      dataset.data = dataset.data.slice(-this.max_points);
+    });
+
+    this.chart.update();
   }
 }

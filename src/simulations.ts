@@ -31,7 +31,7 @@ export abstract class PIDSimulation {
 
   constructor(target: number, args: PIDVars) {
     this.pid_controller = new PID(target, args);
-  };
+  }
 
   /**
    * Updates the simulation by one step.
@@ -187,7 +187,12 @@ export class AirplaneStabilizerPIDSimulation extends PIDSimulation {
 
     // Draw airplane body (rectangular shape)
     ctx.fillStyle = "#3498db";
-    ctx.fillRect(w / 2 - planeWidth / 2, h / 2 - planeHeight / 2, planeWidth, planeHeight);
+    ctx.fillRect(
+      w / 2 - planeWidth / 2,
+      h / 2 - planeHeight / 2,
+      planeWidth,
+      planeHeight
+    );
 
     const stabilizerAngle = this.P; // pitch angle, in degrees (this may need to be adjusted for visualization scale)
 
@@ -202,8 +207,10 @@ export class AirplaneStabilizerPIDSimulation extends PIDSimulation {
     ctx.stroke();
 
     // Draw a line representing the desired target pitch angle (for reference)
-    const targetAngleX = w / 2 + (planeWidth / 2) * Math.cos(this.pid_controller.target);
-    const targetAngleY = h / 2 + (planeHeight / 2) * Math.sin(this.pid_controller.target);
+    const targetAngleX =
+      w / 2 + (planeWidth / 2) * Math.cos(this.pid_controller.target);
+    const targetAngleY =
+      h / 2 + (planeHeight / 2) * Math.sin(this.pid_controller.target);
 
     ctx.strokeStyle = "green";
     ctx.lineWidth = 1;
@@ -220,7 +227,12 @@ export class AirplaneStabilizerPIDSimulation extends PIDSimulation {
     ctx.fillText(`Current Pitch: ${this.P.toFixed(2)}°`, 20, 30);
 
     // Label for target pitch angle
-    ctx.fillText(`Target Pitch: ${this.pid_controller.target.toFixed(2)}°`, 20, 50);  }
+    ctx.fillText(
+      `Target Pitch: ${this.pid_controller.target.toFixed(2)}°`,
+      20,
+      50
+    );
+  }
 
   /**
    * Returns the current pitch angle of the airplane.
