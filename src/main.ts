@@ -4,6 +4,13 @@ import {
 } from "./simulations";
 
 const chartCanvas = document.getElementById("ChartArea") as HTMLCanvasElement;
+function resize() {
+  chartCanvas.width = chartCanvas.clientWidth;
+  chartCanvas.height = chartCanvas.clientHeight;
+}
+window.addEventListener("resize", resize);
+resize();
+
 
 class Program {
   static lastTime: number = performance.now();
@@ -11,14 +18,6 @@ class Program {
 
   static start() {
     this.sim = new RoomHeaterPIDSimulation();
-
-    function resize() {
-      chartCanvas.width = chartCanvas.clientWidth;
-      chartCanvas.height = chartCanvas.clientHeight;
-    }
-    window.addEventListener("resize", resize);
-    resize();
-
     requestAnimationFrame(Program.loop);
   }
   static loop(now: number) {
@@ -26,6 +25,7 @@ class Program {
     Program.lastTime = now;
 
     Program.sim.update(dt);
+    Program.sim.draw();
 
     requestAnimationFrame(Program.loop);
   }

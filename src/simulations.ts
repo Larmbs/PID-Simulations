@@ -7,6 +7,9 @@ import {
 } from "./ui";
 
 import { Temperature, KiloJoulesPerCubicMeterKelvin } from "./units";
+
+const mod = (e: number, n: number) => e - Math.floor(e / n) * n;
+
 /**
  * Base class for a simulation of any kind.
  * This class defines the common methods that all simulations need to implement.
@@ -44,14 +47,6 @@ export abstract class PIDSimulation {
    * @param ctx - The 2D rendering context of the HTML canvas.
    */
   abstract draw(): any;
-
-  /**
-   * Returns the current value of the process being simulated.
-   * This value is usually a measurable quantity that represents the current state of the simulation.
-   *
-   * @returns The current value of the process (e.g., temperature, position, angle, etc.)
-   */
-  abstract current(): number;
 }
 
 /**
@@ -65,8 +60,14 @@ export class RoomHeaterPIDSimulation extends PIDSimulation {
       y_axis: "Temperature" + Temperature.celsius,
       x_axis: "",
     });
-    this.simulation_chart.add_dataset("Room Temperature" + Temperature.celsius, "red");
-    this.simulation_chart.add_dataset("Target Temperature" + Temperature.celsius, "green");
+    this.simulation_chart.add_dataset(
+      "Room Temperature" + Temperature.celsius,
+      "red"
+    );
+    this.simulation_chart.add_dataset(
+      "Target Temperature" + Temperature.celsius,
+      "green"
+    );
 
     this.pid_controller = new PID();
 
@@ -103,12 +104,6 @@ export class RoomHeaterPIDSimulation extends PIDSimulation {
     this.control_bar.update_html();
   }
 
-  /**
-   * Updates the simulation state by one step based on the delta time.
-   * This includes calculating the power level of the heater and the temperature change in the room.
-   *
-   * @param dt - The delta time in seconds.
-   */
   update(dt: number) {
     let target = this.control_bar
       .get_control("Target Temperature" + Temperature.celsius)!
@@ -138,7 +133,7 @@ export class RoomHeaterPIDSimulation extends PIDSimulation {
 
     // Calculate the power level of the heater using the PID controller
     let Q = this.pid_controller.update(
-      this.value,
+      target - this.value,
       {
         target: target,
         kp: kp,
@@ -161,23 +156,50 @@ export class RoomHeaterPIDSimulation extends PIDSimulation {
     this.simulation_chart.add_data(1, target);
   }
 
-  /**
-   * Draws the current state of the simulation to the canvas.
-   * This includes rendering the room temperature and the target temperature on a bar.
-   *
-   * @param ctx - The 2D rendering context of the HTML canvas.
-   */
   draw() {
     this.simulation_chart.update();
   }
+}
 
-  /**
-   * Returns the current room temperature.
-   *
-   * @returns The current temperature of the room.
-   */
-  current(): number {
-    return this.value;
+export class MotorDriverPIDSimulation extends PIDSimulation {
+  velocity: number = 0;
+
+  constructor() {
+    super({
+      range: [0, 0],
+      plots: 0,
+      y_axis: "",
+      x_axis: "",
+    });
+  }
+  update(dt: number) {
+    let target = 0;
+    let e = target - this.value;
+    e = mod(e + 180, 360) - 180;
+
+    let T = this.pid_controller.update(
+      e,
+      {
+        target: 0,
+        kp: 0,
+        ki: 0,
+        kd: 0,
+        min: undefined,
+        max: undefined,
+      },
+      dt
+    );
+
+    let I = 20;
+    //Acceleration
+    let a = T / I;
+    // Velocity
+    this.velocity += a;
+    // Position
+    this.value += this.velocity;
+  }
+  draw() {
+    this.simulation_chart.update();
   }
 }
 

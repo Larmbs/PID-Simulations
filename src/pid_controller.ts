@@ -14,8 +14,7 @@ export class PID {
   private integral: number = 0;
   private last_error: number | null = null;
 
-  update(sensor_value: number, pid_vars: PIDVars, dt: number): number {
-    let e = pid_vars.target - sensor_value;
+  update(e: number, pid_vars: PIDVars, dt: number): number {
 
     this.integral += e * dt;
     let ei = this.integral;
