@@ -1,65 +1,35 @@
-/**
- * Interface for PID Controller variables
- */
 export interface PIDVars {
+  target: number;
   // Effectiveness of Proportional
   kp: number;
   // Effectiveness of Integral
   ki: number;
   // Effectiveness of Derivative
   kd: number;
+  min: number | undefined;
+  max: number | undefined;
 }
 
-/**
- * PID Controller class, represents a working PID controller
- */
 export class PID {
-  public target: number;
-  private pid_vars: PIDVars;
-
   private integral: number = 0;
   private last_error: number | null = null;
 
-  constructor(target: number, pid_vars: PIDVars) {
-    this.target = target;
-    this.pid_vars = pid_vars;
-  }
+  update(sensor_value: number, pid_vars: PIDVars, dt: number): number {
+    let e = pid_vars.target - sensor_value;
 
-  /**
-   * Runs a cycle of PID controller
-   * @param sensor_value Measured environment value
-   * @param dt Delta time
-   * @returns Correction amount
-   */
-  update(sensor_value: number, dt: number): number {
-    // Proportional e(t)
-    let e = this.target - sensor_value;
-
-    // Integral E(t)
     this.integral += e * dt;
     let ei = this.integral;
 
-    // Derivative e'(t)
     let ed = (this.last_error || 0 - e) / dt;
 
-    return this.pid_vars.kp * e + this.pid_vars.ki * ei + this.pid_vars.kd * ed;
-  }
-
-  get_error(sensor_value: number): number {
-    return this.target - sensor_value;
+    let P = pid_vars.kp * e + pid_vars.ki * ei + pid_vars.kd * ed;
+    if (pid_vars.min !== undefined) P = Math.max(P, pid_vars.min);
+    if (pid_vars.max !== undefined) P = Math.min(P, pid_vars.max);
+    return P;
   }
 
   reset() {
     this.integral = 0;
     this.last_error = null;
   }
-
-  set(target: number, pid_vars: PIDVars) {
-    this.target = target;
-    this.pid_vars = pid_vars;
-  }
 }
-
-const DEFAULT_PID = new PID(0, { kp: 0, ki: 0, kd: 0 });
-
-export { DEFAULT_PID };

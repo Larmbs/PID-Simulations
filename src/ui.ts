@@ -7,11 +7,7 @@ import {
   Title,
   CategoryScale,
   Legend,
-  BubbleDataPoint,
-  ChartConfiguration,
-  ChartConfigurationCustomTypesPerDataset,
-  ChartTypeRegistry,
-  Point,
+  ChartDataset,
 } from "chart.js";
 Chart.register(
   LineController,
@@ -23,24 +19,24 @@ Chart.register(
   Legend
 );
 
-export class ControlElem {
-  public min: number;
-  public max: number;
-  public step: number;
-  private value: number;
+export class SliderElem {
+  value: number;
+  min: number;
+  max: number;
+  step: number;
 
   constructor(
     min: number = 0,
     max: number = 0,
     step: number = 1,
-    start_value: number | null = null
+    initial: number | null = null
   ) {
     this.min = min;
     this.max = max;
     this.step = step;
 
-    if (start_value) {
-      this.value = start_value;
+    if (initial) {
+      this.value = initial;
     } else {
       this.value = (min + max) / 2;
     }
@@ -50,10 +46,8 @@ export class ControlElem {
     return this.value;
   }
 
-  set_value(val: number) {
-    if (val < this.min) this.value = this.min;
-    else if (val > this.max) this.value = this.max;
-    else this.value = val;
+  set_value(value: number) {
+    this.value = Math.max(Math.min(this.max, value), this.min);
   }
 
   create_html(id: string): HTMLElement {
@@ -98,7 +92,6 @@ export class ControlElem {
       const val = parseFloat((e.target as HTMLInputElement).value);
       updateAll(val);
     });
-
     numberInput.addEventListener("input", (e) => {
       const val = parseFloat((e.target as HTMLInputElement).value);
       updateAll(val);
@@ -117,14 +110,14 @@ export class ControlElem {
 }
 
 export class ControlBar {
-  private controls: Map<string, ControlElem> = new Map();
+  private controls: Map<string, SliderElem> = new Map();
   private container_id: string = "ControlContainer";
 
-  get_control(label: string): ControlElem | undefined {
+  get_control(label: string): SliderElem | undefined {
     return this.controls.get(label);
   }
 
-  add_control(label: string, control: ControlElem) {
+  add_control(label: string, control: SliderElem) {
     this.controls.set(label, control);
   }
 
@@ -146,45 +139,107 @@ export class ControlBar {
   }
 }
 
+export interface ScrollingChartConfig {
+  range: [number, number];
+  plots: number;
+  y_axis: string;
+  x_axis: string;
+}
+
 export class ScrollingChart {
   private chart: Chart;
-  private max_points: number;
+  private plots: number;
+  private canvas_id: string;
 
-  constructor(
-    max_points: number,
-    config:
-      | ChartConfiguration<
-          keyof ChartTypeRegistry,
-          (number | [number, number] | Point | BubbleDataPoint | null)[],
-          unknown
-        >
-      | ChartConfigurationCustomTypesPerDataset<
-          keyof ChartTypeRegistry,
-          (number | [number, number] | Point | BubbleDataPoint | null)[],
-          unknown
-        >
-  ) {
+  constructor(canvas_id: string, config: ScrollingChartConfig) {
+    this.canvas_id = canvas_id;
+    this.plots = config.plots;
     const chartCanvas = document.getElementById(
-      "ChartArea"
+      this.canvas_id
     ) as HTMLCanvasElement;
-    if (Chart.getChart("ChartArea")) Chart.getChart("ChartArea")?.destroy();
-    this.chart = new Chart(chartCanvas, config);
 
-    this.max_points = max_points;
+    if (Chart.getChart(this.canvas_id))
+      Chart.getChart(this.canvas_id)?.destroy();
+    this.chart = new Chart(chartCanvas, {
+      type: "line",
+      data: {
+        labels: [], // time or frame labels
+        datasets: [],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        animation: false,
+        scales: {
+          y: {
+            min: config.range[0],
+            max: config.range[1],
+            title: {
+              display: true,
+              text: config.y_axis,
+            },
+            grid: {
+              color: "#eee",
+            },
+          },
+          x: {
+            display: false,
+            title: {
+              display: true,
+              text: config.x_axis,
+            },
+          },
+        },
+        plugins: {
+          legend: {
+            position: "top",
+            labels: {
+              font: {
+                size: 16,
+              },
+            },
+          },
+          title: {
+            display: true,
+            text: "PID Simulation Graph",
+            font: {
+              size: 20, // ← title font size
+            },
+          },
+        },
+      },
+    });
+  }
+
+  add_dataset(label: string, color: string = "black", width: number = 4) {
+    this.chart.data.datasets.push({
+      label: label,
+      data: [] as number[],
+      borderColor: color,
+      borderWidth: width,
+      fill: false,
+      pointRadius: 0,
+      pointHoverRadius: 0,
+    });
+    this.chart.update();
+  }
+  get_dataset(label: string): ChartDataset | undefined {
+    return this.chart.data.datasets.find((ds) => ds.label === label);
   }
   add_data(dataset: number, value: number) {
     this.chart.data.datasets[dataset].data.push(value);
   }
-  add_label(label: string) {
-    this.chart.data.labels?.push(label);
-  }
   update() {
-    this.chart.data.labels = this.chart.data.labels?.slice(-this.max_points);
+    this.chart.data.labels = this.chart.data.labels?.slice(-this.plots);
 
     this.chart.data.datasets.forEach((dataset) => {
-      dataset.data = dataset.data.slice(-this.max_points);
+      dataset.data = dataset.data.slice(-this.plots);
     });
 
     this.chart.update();
+  }
+
+  add_label(label: string) {
+    this.chart.data.labels?.push(label);
   }
 }
